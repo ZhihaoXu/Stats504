@@ -1,0 +1,226 @@
+---
+title: "Stats 504, F21, Assignment 1"
+# author: "Zhihao Xu, xuzhihao@umich.edu"
+date: "`r format.Date(Sys.Date(), '%B %d, %Y')`"
+output: 
+  pdf_document: 
+    number_sections: yes
+    latex_engine: pdflatex
+    keep_tex: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(tidyverse)
+library(pscl)
+data = read.csv('derogatory.csv')
+```
+
+
+# Introduction
+
+Derogatory credit reports will exert negative effect on individual's credit history typically for seven to ten years. It is quite crucial to identify the factors that could potentially contribute to derogatory reports. This analysis explains the number of credit reports in terms of the background factors of applicants. The model shows that `share`, `owner` and `active` have strong influence on the derogatory reports.
+
+# Method
+
+In this analysis, our target is to figure out which background factors are associated with the number of derogatory credit reports and measure the level of each association. In this problem, the response variable (derogatory credit reports) is count data, as our client did, we primarily use Poisson regression to model the count of reports with respect to all the background factors that can potentially influence the outcome. As our goal is to broadly understand associations between the derogatory reports and background factors, it is reasonable to include all the variables available in the data except `card`, because `card` is influenced by the number of derogatory credit reports. Our client is concerning that there are too many zeros in the report variable, which makes the data no longer follow a true Poisson distribution. 
+```{r fig.align='center', fig.height=4.5, fig.width=8, echo=FALSE, fig.cap=cap1}
+cap1 = 'Histogram and Boxplot of Derogatory Credit Reports'
+par(mfrow=c(1,2))
+hist(data$reports, freq=FALSE, main='', xlab='Derogatory Reports')
+boxplot(data$reports, xlab='Derogatory Reports')
+```
+
+Through the above histogram, we can see that more than 80\% of the applicants have no derogatory credit reports at all. The distribution of derogatory reports is obviously not a Poisson distribution. Here we consider zero-inflated models to address this problem.
+
+We compare several different models to pursue an optimal fit for the model shown below using likelihood-based metrics and compare them by AIC. To ensure the easy interpretability of the model, we do not consider variable transformation after considering model diagnostics. Eventually we choose Zero-Inflated Negative Binomial regression model for its lowest AIC. Detailed formula for this model can  be found in the appendix.
+
+
+# Result
+
+The whole dataset contains 1319 observations and 12 variables. Since we use `reports` as our outcome variable and exclude `card`, there is 10 variables left to be used as predictors. Among these predictors `owner`, `selfemp` and `majorcards` are binary variables with values 'yes' and 'no', and others predictors are all numerical variables. Here we encode the binary variables as number with value 1 for 'yes' and 0 for 'no'. There are no missing values in this dataset, but some abnormal values. We noticed that there are 7 minor applicants with age less than 1 but high income, and all the other observations are older than 18.
+
+```{r echo=FALSE}
+minor_data = data %>% 
+  select(-card) %>%
+  mutate(
+    reports = as.integer(reports),
+    owner = ifelse(data['owner']=='yes', 1, 0),
+    selfemp = ifelse(data['selfemp']=='yes', 1, 0),
+    majorcards = ifelse(data['majorcards']=='yes', 1, 0)
+  ) %>%
+  filter(
+    age < 18
+  )
+apply(minor_data, 2, round, 3)%>% 
+  knitr::kable()
+```
+
+Hence, we just directly remove these 7 observations. The following tables shows the distribution metrics of all the variables after processing.
+```{r echo=FALSE}
+data = data %>% 
+  select(-card) %>%
+  mutate(
+    reports = as.integer(reports),
+    owner = ifelse(data['owner']=='yes', 1, 0),
+    selfemp = ifelse(data['selfemp']=='yes', 1, 0),
+    majorcards = ifelse(data['majorcards']=='yes', 1, 0)
+  ) %>%
+  filter(
+    age >= 18
+  )
+apply(apply(data, 2, summary),1,round,3) %>% 
+  knitr::kable()
+```
+
+Here we tried three models to fit the data: Poisson Regressions, Zero-Inflated Poisson Regression and Zero-Inflated Negative Binomial Regression. The following table shows the AIC of each model.
+
+| Model                                         | AIC        |
+| --------------------------------------------- | ---------- |
+| Poisson Regressions                           | 2514.59   |
+| Zero-Inflated Poisson Regression              | 2090.59    |
+| Zero-Inflated Negative Binomial Regression    | 1912.04    |
+
+Through this table, we can see that zero-inflated model can significant decrease the AIC of the model, which is definitely a better fit than the original model. Within the zero-inflated models, negative binomial regression model can achieve a better fit than the Poisson regression model. Hence, the final model here we choose is Zero-Inflated Negative Binomial Regression with AIC equals 1912.04. The model details are presented below:
+
+```{r}
+reportsZifNB = zeroinfl(reports ~ age + income + share + expenditure + 
+                                  owner + selfemp + dependents + months + 
+                                  majorcards + active | owner + months + active, 
+                        data, dist = 'negbin')
+summary(reportsZifNB)
+paste("AIC of Zero-Inflated Negative Binomial Regression Model: ", AIC(reportsZifNB))
+```
+
+Through the above result, we can see that for the count part `share`, `owner` and `active` are three significant variables with very low p-values, and for the zero part all the variables are not significant. Hence, we can conclude that `share`, `owner` and `active` have strong association with the number of derogatory reports. The applicants owning their home and having more active credit accounts are less likely to have derogatory reports. The parameter of `share` is a little bit incomprehensible. The negative sign here indicates that the applicants expensing larger proportion of their income tends to have less derogatory reports. Here we generated two diagnostic plots of this regression model: fitted values versus pearson residuals and fitted values versus true values. The first plot indicates that there might be one outlier in this model with residuals greater than 50. And the second one indicates that although the zero-inflated negative binomial regression model can achieve a relative low AIC, it is still not a very good estimator. 
+
+
+
+```{r echo=FALSE, fig.height=4, fig.width=8}
+par(mfrow=c(1,2))
+plot(reportsZifNB$fitted.values, residuals(reportsZifNB, 'pearson'), 
+     pch=20, xlab='fitted values', ylab='pearson residuals')
+plot(reportsZifNB$fitted.values, data$reports,
+     pch=20, xlab='fitted values', ylab='true values')
+abline(0,1, col='blue')
+```
+
+
+
+# Conclusion
+
+This analysis is aimed to simply explain the association between the derogatory reports and the applicant's background factors. While it seems that there may exist other better estimators for this problem, the zero-inflated negative binomial regression model seems characterize derogatory reports well and make great progress towards the origional possion regression model. In conclusion, `share`, `owner` and `active` are certainly associated to the number of applicant's derogatory reports.
+
+
+
+
+
+
+
+# Appendix
+
+## Zero-Inflated Negative Binomial Regression Model
+
+Suppose that for each observation, there are two possible cases. Suppose that if case 1 occurs, the count is zero. However if case 2 occurs, counts(including 0) are generated according to the negative binomial model. Suppose that case 1 occurs with probability $\pi$ and case 2 occurs with probability $1-\pi$. Therefore, the probability distribution of the ZINB random variable $y_i$ can be written as
+
+$$
+P(y_i = j) = 
+\begin{cases}
+\pi_i + (1+\pi_i) g(y_i=0) & \text{if }j=0 \\
+(1-\pi_i) g(y_i)           & \text{if }j>0
+\end{cases}
+$$
+where $\pi_i$ is the logistic link function defined below and $g(y_i)$ is the negative binomial distribution given by
+$$
+g(y_i) = \frac{\Gamma(y_i + 1/\alpha)}{\Gamma(1/\alpha) \Gamma(y_i+1)}\left( \frac{1}{1 + \alpha \mu_i}\right)^{1/\alpha}\left( \frac{\alpha \mu_i}{1 + \alpha \mu_i}\right)^{y_i}.
+$$
+The expression relating these quantities is 
+$$
+\mu_i = \exp(\beta_0 + \beta_1 x_1 + \cdots + \beta_k x_k)
+$$
+
+The logistic link function $\pi_i$ is given by
+$$
+\pi_i = \frac{\lambda_i}{1 + \lambda_i}
+$$
+where
+$$
+\lambda_i = \exp(1 + \gamma_0 + \gamma_1 z_1 + \cdots + \gamma_m z_m).
+$$
+
+Here $z$'s are the variable modeled zero part and $x$'s are the variable modeled for count part.
+
+
+
+## Code
+
+Source code of this report can be found [here](link).
+
+```{r}
+data = read.csv('derogatory.csv')
+data = data %>% 
+  select(-card) %>%
+  mutate(
+    reports = as.integer(reports),
+    owner = ifelse(data['owner']=='yes', 1, 0),
+    selfemp = ifelse(data['selfemp']=='yes', 1, 0),
+    majorcards = ifelse(data['majorcards']=='yes', 1, 0)
+  ) %>%
+  filter(
+    age >= 18
+  )
+```
+
+```{r}
+expr = 'reports ~ age + income + share + expenditure + owner + selfemp + dependents + months + majorcards + active'
+reportPoission = glm(expr, family="poisson", data=data)
+summary(reportPoission)
+paste("AIC of Poisson Regression Model: ", AIC(reportPoission))
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(reportPoission$fitted.values, residuals(reportPoission, 'pearson'), 
+     pch=20, xlab='fitted values', ylab='pearson residuals')
+plot(reportPoission$fitted.values, data$reports,
+     pch=20, xlab='fitted values', ylab='true values')
+abline(0,1, col='blue')
+```
+
+
+```{r}
+reportsZifPos= zeroinfl(reports ~ age + income + share + expenditure + owner + 
+                          selfemp + dependents + months + majorcards + active | 
+                          age + income + share + expenditure + owner + 
+                          selfemp + dependents + months + majorcards + active, 
+                        data, dist = 'poisson')
+summary(reportsZifPos)
+paste("AIC of Zero-Inflated Poisson Regression Model: ", AIC(reportsZifPos))
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(reportsZifPos$fitted.values, residuals(reportsZifPos, 'pearson'), 
+     pch=20, xlab='fitted values', ylab='pearson residuals')
+plot(reportsZifPos$fitted.values, data$reports,
+     pch=20, xlab='fitted values', ylab='true values')
+abline(0,1, col='blue')
+```
+
+
+
+
+```{r}
+reportsZifNB = zeroinfl(reports ~ age + income + share + expenditure + owner + 
+                          selfemp + dependents + months + majorcards + active | 
+                          owner + months + active, data, dist = 'negbin')
+summary(reportsZifNB)
+paste("AIC of Zero-Inflated Negative Binomial Regression Model: ", AIC(reportsZifNB))
+```
+
+
+
+
+
