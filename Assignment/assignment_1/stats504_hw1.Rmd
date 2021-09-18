@@ -156,7 +156,7 @@ Here $z$'s are the variable modeled zero part and $x$'s are the variable modeled
 
 ## Code
 
-Source code of this report can be found [here](link).
+Source code of this report can be found [*here*](https://github.com/ZhihaoXu/Stats504/blob/main/Assignment/assignment_1/stats504_hw1.Rmd).
 
 ```{r}
 data = read.csv('derogatory.csv')
