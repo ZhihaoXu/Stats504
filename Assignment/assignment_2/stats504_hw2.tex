@@ -315,6 +315,8 @@ effect on visual acuity, \texttt{clinical\ risk} have negative influence
 on visual acuity, and we do not have enough evidence to show the effect
 of \texttt{age} on visual acuity.
 
+\pagebreak
+
 \hypertarget{appendix}{%
 \section{Appendix}\label{appendix}}
 
@@ -352,7 +354,7 @@ Source code of this report can be found
 \end{Highlighting}
 \end{Shaded}
 
-\includegraphics{stats504_hw2_files/figure-latex/unnamed-chunk-6-1.pdf}
+\includegraphics{stats504_hw2_files/figure-latex/unnamed-chunk-7-1.pdf}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -361,18 +363,23 @@ Source code of this report can be found
 \end{Highlighting}
 \end{Shaded}
 
-\includegraphics{stats504_hw2_files/figure-latex/unnamed-chunk-6-2.pdf}
+\includegraphics{stats504_hw2_files/figure-latex/unnamed-chunk-7-2.pdf}
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{dif_res =}\StringTok{ }\KeywordTok{rbind}\NormalTok{(}
-  \KeywordTok{c}\NormalTok{(}\StringTok{'Treatment'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{treatment, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{treatment, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)), }
-  \KeywordTok{c}\NormalTok{(}\StringTok{'Type'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{type, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{type, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)),}
-  \KeywordTok{c}\NormalTok{(}\StringTok{'Eye'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{eye, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{eye, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)),}
-  \KeywordTok{c}\NormalTok{(}\StringTok{'Risk'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{risk, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{risk, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)))}
+  \KeywordTok{c}\NormalTok{(}\StringTok{'Treatment'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{treatment, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq,}
+    \DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{treatment, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)), }
+  \KeywordTok{c}\NormalTok{(}\StringTok{'Type'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{type, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }
+    \DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{type, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)),}
+  \KeywordTok{c}\NormalTok{(}\StringTok{'Eye'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{eye, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }
+    \DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{eye, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)),}
+  \KeywordTok{c}\NormalTok{(}\StringTok{'Risk'}\NormalTok{, }\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{risk, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }
+    \DecValTok{1} \OperatorTok{-}\StringTok{ }\KeywordTok{pchisq}\NormalTok{(}\KeywordTok{survdiff}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{risk, }\DataTypeTok{data=}\NormalTok{df)}\OperatorTok{$}\NormalTok{chisq, }\DataTypeTok{df=}\DecValTok{1}\NormalTok{)))}
 \NormalTok{dif_res[,}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{)] =}\StringTok{ }\KeywordTok{round}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(dif_res[,}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{)]), }\DecValTok{3}\NormalTok{)}
 \NormalTok{dif_res[,}\KeywordTok{c}\NormalTok{(}\DecValTok{3}\NormalTok{)] =}\StringTok{ }\KeywordTok{round}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(dif_res[,}\KeywordTok{c}\NormalTok{(}\DecValTok{3}\NormalTok{)]), }\DecValTok{6}\NormalTok{)}
-\NormalTok{dif_res }\OperatorTok{%>%}\StringTok{ }\NormalTok{knitr}\OperatorTok{::}\KeywordTok{kable}\NormalTok{(}\DataTypeTok{col.names =} \KeywordTok{c}\NormalTok{(}\StringTok{'Variable'}\NormalTok{, }\StringTok{'Chisq2'}\NormalTok{, }\StringTok{'P-value'}\NormalTok{), }\DataTypeTok{caption =} \StringTok{'The Log-rank Test'}\NormalTok{)}
+\NormalTok{dif_res }\OperatorTok{%>%}\StringTok{ }\NormalTok{knitr}\OperatorTok{::}\KeywordTok{kable}\NormalTok{(}\DataTypeTok{col.names =} \KeywordTok{c}\NormalTok{(}\StringTok{'Variable'}\NormalTok{, }\StringTok{'Chisq2'}\NormalTok{, }\StringTok{'P-value'}\NormalTok{), }
+                         \DataTypeTok{caption =} \StringTok{'The Log-rank Test'}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -396,7 +403,8 @@ Risk & 32.962 & 0\tabularnewline
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{cox_model =}\StringTok{ }\KeywordTok{summary}\NormalTok{(}\KeywordTok{coxph}\NormalTok{(survobj}\OperatorTok{~}\NormalTok{eye}\OperatorTok{+}\NormalTok{age}\OperatorTok{+}\NormalTok{risk}\OperatorTok{+}\NormalTok{treatment, }\DataTypeTok{data=}\NormalTok{df))}
-\KeywordTok{cbind}\NormalTok{(}\KeywordTok{round}\NormalTok{(cox_model}\OperatorTok{$}\NormalTok{coefficients[,}\KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DecValTok{5}\NormalTok{)], }\DecValTok{4}\NormalTok{), }\KeywordTok{round}\NormalTok{(cox_model}\OperatorTok{$}\NormalTok{conf.int,}\DecValTok{4}\NormalTok{))}\OperatorTok{%>%}
+\KeywordTok{cbind}\NormalTok{(}\KeywordTok{round}\NormalTok{(cox_model}\OperatorTok{$}\NormalTok{coefficients[,}\KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DecValTok{5}\NormalTok{)], }\DecValTok{4}\NormalTok{), }
+      \KeywordTok{round}\NormalTok{(cox_model}\OperatorTok{$}\NormalTok{conf.int,}\DecValTok{4}\NormalTok{)) }\OperatorTok{%>%}
 \StringTok{  }\NormalTok{knitr}\OperatorTok{::}\KeywordTok{kable}\NormalTok{(}\DataTypeTok{caption =} \StringTok{'The Cox Proportion Hazard Model'}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}

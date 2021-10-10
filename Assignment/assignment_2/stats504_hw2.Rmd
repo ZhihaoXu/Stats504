@@ -105,7 +105,12 @@ After Comparing these two models, we can see that the coefficients and significa
 
 This analysis is aimed to quantify the efficacy of `Argon` and `Xenon` treatments, and explains the effect of `age` and `clinical risk` on the risk of visual loss. The Frailty Cox Proportional Hazards Model seems characterize the hazards function quite well in this question. In conclusion, both `Argon` and `Xenon` treatments certainly have significant positive treatment effect on visual acuity, `clinical risk` have negative influence on visual acuity, and we do not have enough evidence to show the effect of `age` on visual acuity.
 
+```{r, echo=FALSE, results='asis'}
+cat("\n\n\\pagebreak\n")
+```
+
 # Appendix
+
 
 Source code of this report can be found [*here*](https://github.com/ZhihaoXu/Stats504/blob/main/Assignment/assignment_2/stats504_hw2.Rmd).
 
@@ -141,16 +146,22 @@ plot_survfit('risk')
 
 
 dif_res = rbind(
-  c('Treatment', survdiff(survobj~treatment, data=df)$chisq, 1 - pchisq(survdiff(survobj~treatment, data=df)$chisq, df=1)), 
-  c('Type', survdiff(survobj~type, data=df)$chisq, 1 - pchisq(survdiff(survobj~type, data=df)$chisq, df=1)),
-  c('Eye', survdiff(survobj~eye, data=df)$chisq, 1 - pchisq(survdiff(survobj~eye, data=df)$chisq, df=1)),
-  c('Risk', survdiff(survobj~risk, data=df)$chisq, 1 - pchisq(survdiff(survobj~risk, data=df)$chisq, df=1)))
+  c('Treatment', survdiff(survobj~treatment, data=df)$chisq,
+    1 - pchisq(survdiff(survobj~treatment, data=df)$chisq, df=1)), 
+  c('Type', survdiff(survobj~type, data=df)$chisq, 
+    1 - pchisq(survdiff(survobj~type, data=df)$chisq, df=1)),
+  c('Eye', survdiff(survobj~eye, data=df)$chisq, 
+    1 - pchisq(survdiff(survobj~eye, data=df)$chisq, df=1)),
+  c('Risk', survdiff(survobj~risk, data=df)$chisq, 
+    1 - pchisq(survdiff(survobj~risk, data=df)$chisq, df=1)))
 dif_res[,c(2)] = round(as.numeric(dif_res[,c(2)]), 3)
 dif_res[,c(3)] = round(as.numeric(dif_res[,c(3)]), 6)
-dif_res %>% knitr::kable(col.names = c('Variable', 'Chisq2', 'P-value'), caption = 'The Log-rank Test')
+dif_res %>% knitr::kable(col.names = c('Variable', 'Chisq2', 'P-value'), 
+                         caption = 'The Log-rank Test')
 
 cox_model = summary(coxph(survobj~eye+age+risk+treatment, data=df))
-cbind(round(cox_model$coefficients[,c(1,4,5)], 4), round(cox_model$conf.int,4))%>%
+cbind(round(cox_model$coefficients[,c(1,4,5)], 4), 
+      round(cox_model$conf.int,4)) %>%
   knitr::kable(caption = 'The Cox Proportion Hazard Model')
 gof = cox.zph(coxph(survobj~eye+age+risk+treatment, data=df)) 
 gof$table %>% knitr::kable(caption = 'Proportional Hazards Assumption Test')
