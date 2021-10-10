@@ -1,0 +1,166 @@
+---
+title: "Stats 504 Homework 2"
+# author: "Xu Zhihao"
+date: "`r format.Date(Sys.Date(), '%B %d, %Y')`"
+output: 
+  pdf_document: 
+    number_sections: yes
+    keep_tex: yes
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(survival)
+library(tidyverse)
+library(Hmisc)
+```
+
+
+# Introduction
+Diabetic Retinopathy is a retinal disorder in diabetes patients which can cause blindness. There exists two laser treatments, argon/xenon, that can help delay diabetic retinopathy. In this analysis, we plan to determine the efficacy and quantify the improvement of each laser treatment on visual acuity. Moreover, we want to explain the influence of age and clinical risk of diabetic retinopathy on visual acuity.
+
+# Method
+In this analysis, our target is to figure out the efficacy of two laser treatments and analyze the effect of age and clinical risk. We first use Kaplan-Meier Estimator to plot the survival curve curve and test if there is a difference between the survival curves. And then we use Cox Proportional Hazards Model to fit the data and quantify the relationship between the predictors and hazards functions. We also noticed that in this dataset, every two rows can be treated as a cluster, since they are just left and right eyes of one patient. There exists some associations between observations. In order to address this issue, we consider the frailty model, we just include a frailty term `frailty(id)` in our Cox PH model.
+
+# Result
+
+The whole dataset contains 197 patients and 394 observations. It has totally 10 columns and does not have any missing value. We defined a new variable `survobj` as our response variable in this analysis, which is a survival object and combines the information of `futime` and `status`. We also created a new variable `treatment` which encodes the `laser` to 'control' when `trt` equals 0. In this dataset, `age` and `type` contain redundant information, we just use `type` in Kaplan-Meier Estimator and `age` in Cox Proportional Hazards Model. Since there is no casual relationship between other predictors in this dataset, we also include `eye` and `risk` in our model.
+
+```{r echo=FALSE}
+df = read.delim('diabeticVision.csv', sep=',')
+df = df %>%
+  mutate(
+    tr_eye = ifelse(trt==1, eye, ifelse(eye=='left', 'right', 'left')),
+    treatment = ifelse(trt==1, laser, 'control')
+  )
+df$treatment =  relevel(as.factor(df$treatment), ref='control')
+```
+
+## Kaplan-Meier Estimation
+
+The following figure shows survival curve against `treatment`, `type`, `eye` and `risk`. Through the figure we can see that in the plot against `treatment` and `risk`, the difference between curves is relatively larger than the rest two plots. Moreover, the difference increases as time increases. As time goes by, the survival curve of control group and high clinical risk group drcreases faster than the others.
+
+
+```{r echo=FALSE, fig.height=4, fig.width=8}
+survobj = with(df, Surv(futime, status))
+
+plot_survfit = function(var){
+  fitr <- survfit(as.formula(paste0('survobj~', var)), data=df)
+  plot(fitr, xlab="Time at Risk of Loss of Vision in Months",
+   ylab="% not loss vision", yscale=100,
+   main=paste("Survival Distribution by", capitalize(var)),
+   col = c('red', 'blue', 'orange', 'yellow', 'green', 'purple'))
+  legend('bottomleft', legend=levels(as.factor(df[,var])), 
+         col = c('red', 'blue', 'orange', 'yellow', 'green', 'purple'), lty=1)
+}
+par(mfrow=c(1,2))
+plot_survfit('treatment')
+plot_survfit('type')
+plot_survfit('eye')
+plot_survfit('risk')
+```
+
+We also conduct a log-rank test to test whether there is a true difference between survival curves. The hypothesis of the log-rank test as follows.  
+$H_0$ : There is no difference in the Kaplan-Meier survival curve between different groups.  
+$H_1$ : There is a difference in the Kaplan-Meier survival curve between different groups.  
+The result is shown in the following table. We can see that for the difference between `treatment` group and `risk` group they are statistical significant, and we do not have enough statistical evidence to conclude the difference between `eye` group and `type` group.
+
+```{r echo=FALSE}
+dif_res = rbind(
+  c('Treatment', survdiff(survobj~treatment, data=df)$chisq, 1 - pchisq(survdiff(survobj~treatment, data=df)$chisq, df=1)), 
+  c('Type', survdiff(survobj~type, data=df)$chisq, 1 - pchisq(survdiff(survobj~type, data=df)$chisq, df=1)),
+  c('Eye', survdiff(survobj~eye, data=df)$chisq, 1 - pchisq(survdiff(survobj~eye, data=df)$chisq, df=1)),
+  c('Risk', survdiff(survobj~risk, data=df)$chisq, 1 - pchisq(survdiff(survobj~risk, data=df)$chisq, df=1)))
+dif_res[,c(2)] = round(as.numeric(dif_res[,c(2)]), 3)
+dif_res[,c(3)] = round(as.numeric(dif_res[,c(3)]), 6)
+dif_res %>% knitr::kable(col.names = c('Variable', 'Chisq2', 'P-value'), caption = 'The Log-rank Test')
+```
+
+
+
+## Cox Proportional Hazards Model
+In this section, we first conduct the classical Cox Proportional Hazards Model using `survobj`  as response and `eye`, `age`, `risk`, `treatment` as predictors. Then we conduct hypotheses to test the proportional hazards assumptions for the Cox PH model. The result indicates that the proportional assumption of Cox PH model is satisfied quite well here. 
+
+```{r echo=FALSE}
+cox_model = summary(coxph(survobj~eye+age+risk+treatment, data=df))
+cbind(round(cox_model$coefficients[,c(1,4,5)], 4), round(cox_model$conf.int,4))%>%
+  knitr::kable(caption = 'The Cox Proportion Hazard Model')
+gof = cox.zph(coxph(survobj~eye+age+risk+treatment, data=df)) 
+gof$table %>% knitr::kable(caption = 'Proportional Hazards Assumption Test')
+```
+
+
+To address the association between the left and right eyes of one person, we conducted a Frailty Cox PH model, which adds a simple random effects term to allow intra-person correlation in one patient.
+```{r echo=FALSE}
+cox_model_frailty = summary(coxph(survobj~eye+age+risk+treatment+frailty(id), data=df))
+cbind(round(cox_model_frailty$coefficients[,c(1,4,6)], 4), 
+      rbind(round(cox_model_frailty$conf.int,4), c(' ', ' ', ' ',' ')))%>%
+  knitr::kable(caption = 'The Frailty Cox Proportional Hazards Model')
+```
+
+After Comparing these two models, we can see that the coefficients and significant tests are quite similar. `Argon` treatment, `Xenon` treatment and `Risk` are statistically significant in both models, and rest predictors are not. Here we use Frailty Cox PH model to quantify the efficacy of two laser treatments. The exponential coefficient of `Argon` treatment is 0.4273 (95\% [0.2743, 0.6656]) and the exponential coefficient of `Xenon` treatment is 0.3847 (95\% [0.2427, 0.6098]). Comparing with the control group, `Argon` treatment can decrease the risk of visual loss to 42.73\% (95\% [27.43\%, 66.56\%]) and `Xenon` treatment can decrease the risk of visual loss to 38.47\% (95\% [24.27\%, 60.98\%]). The `Xenon` treatment can provide relatively better treatment effect. AS for the effect of `age` and `risk`, since `age` is not statistically significant we can not conclude any effect of `age` on the risk of visual loss. The exponential coefficient of `risk` treatment is 1.1785 (95\% [1.0292, 1.3494]), which indicates that 1-unit increase in clinical risk, the risk of visual loss will also increase 17.85% (95\% CI [2.92\%, 34.94\%]).
+
+# Conclusion
+
+This analysis is aimed to quantify the efficacy of `Argon` and `Xenon` treatments, and explains the effect of `age` and `clinical risk` on the risk of visual loss. The Frailty Cox Proportional Hazards Model seems characterize the hazards function quite well in this question. In conclusion, both `Argon` and `Xenon` treatments certainly have significant positive treatment effect on visual acuity, `clinical risk` have negative influence on visual acuity, and we do not have enough evidence to show the effect of `age` on visual acuity.
+
+# Appendix
+
+Source code of this report can be found [*here*](https://github.com/ZhihaoXu/Stats504/blob/main/Assignment/assignment_2/stats504_hw2.Rmd).
+
+```{r fig.height=4, fig.width=8}
+library(survival)
+library(tidyverse)
+library(Hmisc)
+
+df = read.delim('diabeticVision.csv', sep=',')
+df = df %>%
+  mutate(
+    tr_eye = ifelse(trt==1, eye, ifelse(eye=='left', 'right', 'left')),
+    treatment = ifelse(trt==1, laser, 'control')
+  )
+df$treatment =  relevel(as.factor(df$treatment), ref='control')
+
+survobj = with(df, Surv(futime, status))
+
+plot_survfit = function(var){
+  fitr <- survfit(as.formula(paste0('survobj~', var)), data=df)
+  plot(fitr, xlab="Time at Risk of Loss of Vision in Months",
+   ylab="% not loss vision", yscale=100,
+   main=paste("Survival Distribution by", capitalize(var)),
+   col = c('red', 'blue', 'orange', 'yellow', 'green', 'purple'))
+  legend('bottomleft', legend=levels(as.factor(df[,var])), 
+         col = c('red', 'blue', 'orange', 'yellow', 'green', 'purple'), lty=1)
+}
+par(mfrow=c(1,2))
+plot_survfit('treatment')
+plot_survfit('type')
+plot_survfit('eye')
+plot_survfit('risk')
+
+
+dif_res = rbind(
+  c('Treatment', survdiff(survobj~treatment, data=df)$chisq, 1 - pchisq(survdiff(survobj~treatment, data=df)$chisq, df=1)), 
+  c('Type', survdiff(survobj~type, data=df)$chisq, 1 - pchisq(survdiff(survobj~type, data=df)$chisq, df=1)),
+  c('Eye', survdiff(survobj~eye, data=df)$chisq, 1 - pchisq(survdiff(survobj~eye, data=df)$chisq, df=1)),
+  c('Risk', survdiff(survobj~risk, data=df)$chisq, 1 - pchisq(survdiff(survobj~risk, data=df)$chisq, df=1)))
+dif_res[,c(2)] = round(as.numeric(dif_res[,c(2)]), 3)
+dif_res[,c(3)] = round(as.numeric(dif_res[,c(3)]), 6)
+dif_res %>% knitr::kable(col.names = c('Variable', 'Chisq2', 'P-value'), caption = 'The Log-rank Test')
+
+cox_model = summary(coxph(survobj~eye+age+risk+treatment, data=df))
+cbind(round(cox_model$coefficients[,c(1,4,5)], 4), round(cox_model$conf.int,4))%>%
+  knitr::kable(caption = 'The Cox Proportion Hazard Model')
+gof = cox.zph(coxph(survobj~eye+age+risk+treatment, data=df)) 
+gof$table %>% knitr::kable(caption = 'Proportional Hazards Assumption Test')
+
+# library(coxme)
+# sfrail <- coxme(survobj~laser+eye+type+risk + (1 | id),  data = df)
+
+cox_model_frailty = summary(coxph(survobj~eye+age+risk+treatment+frailty(id), data=df))
+cbind(round(cox_model_frailty$coefficients[,c(1,4,6)], 4), 
+      rbind(round(cox_model_frailty$conf.int,4), c(' ', ' ', ' ',' ')))%>%
+  knitr::kable(caption = 'The Frailty Cox Proportional Hazards Model')
+```
+
